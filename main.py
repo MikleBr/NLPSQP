@@ -1,3 +1,9 @@
-import tests.test3 as test3
+from managers.problem_json_parser import ProblemJSONParser
+from managers.optimizer import Optimizer
 
-test3.run_example()
+problem_json_parser = ProblemJSONParser()
+
+problem = problem_json_parser.createProblem('tests/test2.json')
+
+optimizer = Optimizer(problem)
+optimizer.optimize()

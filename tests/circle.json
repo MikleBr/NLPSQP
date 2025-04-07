@@ -1,0 +1,25 @@
+{
+  "target_function": {
+    "name": "Circle Problem",
+    "expression": "x**2 + y**2"
+  },
+  "variables": [
+    {
+      "identifier": "x",
+      "name": "x",
+      "defaultValue": 100
+    },
+    {
+      "identifier": "y",
+      "name": "y",
+      "defaultValue": 100
+    }
+  ],
+  "constraints": [
+    {
+      "type": "inequality",
+      "name": "x + y >= 1",
+      "expression": "- (x + y - 1)"
+    }
+  ]
+}

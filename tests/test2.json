@@ -1,0 +1,29 @@
+{
+  "target_function": {
+    "name": "Demo 2",
+    "expression": "(x - 3) ** 2 + (y - 2) ** 2"
+  },
+  "variables": [
+    {
+      "identifier": "x",
+      "name": "x",
+      "defaultValue": 10,
+      "lowerBound": -5,
+      "upperBound": 20
+    },
+    {
+      "identifier": "y",
+      "name": "y",
+      "defaultValue": 50,
+      "lowerBound": 0,
+      "upperBound": 100
+    }
+  ],
+  "constraints": [
+    {
+      "type": "inequality",
+      "name": "x + y - 5 <= 0",
+      "expression": "x + y - 5"
+    }
+  ]
+}
