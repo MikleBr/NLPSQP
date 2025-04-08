@@ -10,7 +10,7 @@ from models.design_variable import DesignVariable
 
 
 class ProblemJSONParser:
-    def parseVariables(self, variables):
+    def _parseVariables(self, variables):
         """
         Парсит список переменных из JSON и инициализирует объекты класса DesignVariable.
         
@@ -39,7 +39,7 @@ class ProblemJSONParser:
 
         return variable_list
 
-    def parseFunctionFromString(self, function_str, allowed_variables):
+    def _parseFunctionFromString(self, function_str, allowed_variables):
         """
         Парсит математическую функцию из строки и проверяет переменные.
 
@@ -67,7 +67,7 @@ class ProblemJSONParser:
             print(f"Ошибка при парсинге функции: {e}")
             raise
 
-    def createTargetFunction(self, data, allowed_variables) -> TargetFunction:
+    def _createTargetFunction(self, data, allowed_variables) -> TargetFunction:
         target_function = data.get("target_function")
         if not target_function:
             raise ValueError("В файле отсутствует ключ 'target_function'")
@@ -76,21 +76,21 @@ class ProblemJSONParser:
         if not target_expression:
             raise ValueError("В 'target_function' отсутствует ключ 'expression'")
 
-        parsed_target_function = self.parseFunctionFromString(
+        parsed_target_function = self._parseFunctionFromString(
             target_expression, allowed_variables)
 
         target_name = target_function.get("name")
 
         return TargetFunction(parsed_target_function, target_name)
 
-    def createConstraint(self, constraintJson, allowed_variables) -> Constraint:
+    def _createConstraint(self, constraintJson, allowed_variables) -> Constraint:
         constraint_expression = constraintJson.get("expression")
 
         if not constraint_expression:
             raise ValueError(
                 "В одном из ограничений отсутствует ключ 'expression'")
 
-        parsed_constraint = self.parseFunctionFromString(
+        parsed_constraint = self._parseFunctionFromString(
             constraint_expression, allowed_variables)
 
         constraint_name = constraintJson.get("name")
@@ -105,18 +105,18 @@ class ProblemJSONParser:
             variables = data.get("variables")
             if not variables:
                 raise ValueError("В файле отсутствует ключ 'variables'")
-            variable_list = self.parseVariables(variables)
+            variable_list = self._parseVariables(variables)
             # Извлекаем имена переменных
             allowed_variables = {var.name for var in variable_list}
 
             # Шаг 3: Парсинг целевой функции
-            target_function = self.createTargetFunction(data, allowed_variables)
+            target_function = self._createTargetFunction(data, allowed_variables)
 
             # Шаг 4: Парсинг ограничений
             constraints = data.get("constraints", [])
             parsed_constraints: List[Constraint] = []
             for constraint in constraints:
-                constraintInstance = self.createConstraint(
+                constraintInstance = self._createConstraint(
                     constraint, allowed_variables)
                 parsed_constraints.append(constraintInstance)
 
