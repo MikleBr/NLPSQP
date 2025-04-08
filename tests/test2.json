@@ -7,14 +7,14 @@
     {
       "identifier": "x",
       "name": "x",
-      "defaultValue": 10,
+      "defaultValue": 100,
       "lowerBound": -5,
-      "upperBound": 20
+      "upperBound": 100
     },
     {
       "identifier": "y",
       "name": "y",
-      "defaultValue": 50,
+      "defaultValue": 100,
       "lowerBound": 0,
       "upperBound": 100
     }

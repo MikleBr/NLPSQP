@@ -13,6 +13,7 @@ class Optimizer:
         self._setup_logger()
         self._last_grad_norm = np.inf
         self._last_step_size = 0.0
+        self._prev_alpha = 1.0
 
     def _setup_logger(self):
         self.logger = logging.getLogger('SQPOptimizer')
@@ -78,8 +79,7 @@ class Optimizer:
                 self.logger.error("❌ QP не решена. Прерывание.")
                 break
 
-            # alpha = self._line_search(x, p, grad)
-            # self.logger.info(f"alpha: {alpha}")
+            alpha = self._line_search(x, p, grad)
             extended_p = p
             x_new = x + extended_p
             self.task.set_variable_values(x_new)
@@ -109,7 +109,7 @@ class Optimizer:
         return (np.array(A), np.array(b)) if A else (np.zeros((0, len(x))), np.zeros(0))
 
     def _line_search(self, x, p, grad):
-        alpha = 1.0
+        alpha = self._prev_alpha
         beta = 0.5
         c1 = 1e-4
         for _ in range(20):
@@ -123,6 +123,8 @@ class Optimizer:
             if f_new <= f_curr + c1 * alpha * (grad @ p):
                 return alpha
             alpha *= beta
+
+        self._prev_alpha = alpha
         return alpha
 
     def _check_constraints(self):

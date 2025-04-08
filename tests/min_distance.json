@@ -1,0 +1,17 @@
+{
+    "target_function": {
+      "name": "Distance to (3,3)",
+      "expression": "(x - 3)**2 + (y - 3)**2"
+    },
+    "variables": [
+      { "identifier": "x", "name": "x", "defaultValue": 0 },
+      { "identifier": "y", "name": "y", "defaultValue": 0 }
+    ],
+    "constraints": [
+      {
+        "type": "inequality",
+        "name": "Inside ellipse",
+        "expression": "((x/2)**2 + (y/3)**2 - 1)"
+      }
+    ]
+  }

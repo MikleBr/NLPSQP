@@ -1,0 +1,11 @@
+{
+    "target_function": {
+      "name": "Rosenbrock Valley",
+      "expression": "(1 - x)**2 + 100 * (y - x**2)**2"
+    },
+    "variables": [
+      { "identifier": "x", "name": "x", "defaultValue": -1 },
+      { "identifier": "y", "name": "y", "defaultValue": 2 }
+    ],
+    "constraints": []
+  }
