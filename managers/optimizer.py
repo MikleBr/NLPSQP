@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from models.optimization_task import OptimizationTask
 from models.constraint import ConstraintType
-# from autograd import grad, hessian
+from autograd import grad, hessian
 
 
 class Optimizer:
@@ -37,66 +37,21 @@ class Optimizer:
         self.logger.info(f"Number of constraints: {len(self.task.constraints)}")
 
     def _compute_gradient(self, func, x: np.ndarray) -> np.ndarray:
-        eps = max(self.task.config.eps, 1e-8)
-        grad = np.zeros_like(x)
-
-        variable_names = self.task.get_variable_names()
-
-        for i in range(x.size):
-            x_plus_eps = x.copy() + eps
-            x_minus_eps = x.copy() - eps
-
-            f_high = func.evaluate(dict(zip(variable_names, x_plus_eps)))
-            f_low = func.evaluate(dict(zip(variable_names, x_minus_eps)))
-
-            grad[i] = (f_high - f_low) / (2 * eps)
-
-        return grad
+        x = x.astype(float)
+        grad_func = grad(lambda x: func.evaluate(dict(zip(self.task.get_variable_names(), x))))
+        return grad_func(x)
 
     def _compute_hessian(self, func, x: np.ndarray) -> np.ndarray:
-        eps = max(self.task.config.eps, 1e-8)
-        n = len(x)
-        hess = np.zeros((n, n))
-        original = x.copy()
-
-        variable_names = self.task.get_variable_names()
-
-        for i in range(n):
-            for j in range(n):
-                x_plus_i_plus_j = original.copy()
-                x_plus_i_plus_j[i] += eps
-                x_plus_i_plus_j[j] += eps
-
-                x_plus_i_minus_j = original.copy()
-                x_plus_i_minus_j[i] += eps
-                x_plus_i_minus_j[j] -= eps
-
-                x_minus_i_minus_j = original.copy()
-                x_minus_i_minus_j[i] -= eps
-                x_minus_i_minus_j[j] -= eps
-
-                x_minus_i_plus_j = original.copy()
-                x_minus_i_plus_j[i] -= eps
-                x_minus_i_plus_j[j] += eps
-
-                f1 = func.evaluate(dict(zip(variable_names, x_plus_i_plus_j)))
-                f2 = func.evaluate(dict(zip(variable_names, x_plus_i_minus_j)))
-                f3 = func.evaluate(dict(zip(variable_names, x_minus_i_minus_j)))
-                f4 = func.evaluate(dict(zip(variable_names, x_minus_i_plus_j)))
-
-                hess[i, j] = (f1 - f2 - f3 + f4) / (4 * eps ** 2)
-
-        return hess
+        x = x.astype(float)
+        hess_func = hessian(lambda x: func.evaluate(dict(zip(self.task.get_variable_names(), x))))
+        return hess_func(x)
 
     def _solve_qp_subproblem(self, Hessian, gradients, A, b):
         from cvxpy import Variable, Minimize, Problem, quad_form
 
-        # H = 0.5 * (Hessian + Hessian.T)  # Симметризуем матрицу
-        # H += 1e-6 * np.eye(n)  # регуляризация
-
         n = len(gradients)
         x = Variable(n)
-        # quad_form --> x^T H x
+
         objective = Minimize(0.5 * quad_form(x, Hessian) + gradients.T @ x)
         constraints = [A @ x <= b] if A.shape[0] > 0 else []
         prob = Problem(objective, constraints)
@@ -108,9 +63,9 @@ class Optimizer:
 
         for iteration in range(self.task.config.max_iter):
             grad = self._compute_gradient(self.task.target, x)
-            # hess = self._compute_hessian(self.task.target, x)
+            hess = self._compute_hessian(self.task.target, x)
             # TODO: Add BFGS algorithm for Hessian
-            hess = np.eye(len(x))
+            # hess = np.eye(len(x))
             A, b = self._prepare_constraints(x)
 
             try:
