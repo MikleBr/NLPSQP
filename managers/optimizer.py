@@ -63,10 +63,22 @@ class Optimizer:
     def _solve_qp_subproblem(self, Hessian, gradients, A, b):
         from cvxpy import Variable, Minimize, Problem, quad_form
 
-        n = len(gradients)
+        H = 0.5 * (Hessian + Hessian.T)
+
+        n = H.shape[0]
+        regularization_term = 1e-6 * np.eye(n)
+        H += regularization_term
+
+        eigenvalues = np.linalg.eigvals(H)
+        if np.any(eigenvalues <= 0):
+            self.logger.warning("Матрица Гессе не является положительно определенной. Применяется дополнительная регуляризация.")
+            H += 1e-4 * np.eye(n)
+
+        self.logger.debug(f"Hessian matrix:\n{H}")
+
         x = Variable(n)
 
-        objective = Minimize(0.5 * quad_form(x, Hessian) + gradients.T @ x)
+        objective = Minimize(0.5 * quad_form(x, H) + gradients.T @ x)
         constraints = [A @ x <= b] if A.shape[0] > 0 else []
         prob = Problem(objective, constraints)
         prob.solve()
@@ -129,11 +141,11 @@ class Optimizer:
         f_val = self.task.target.evaluate(var_dict)
         
         constraint_penalty = 0.0
-        for con in self.task.constraints:
-            val = con.evaluate(var_dict)
-            if con.type.name == "INEQ":
+        for constraint in self.task.constraints:
+            val = constraint.evaluate(var_dict)
+            if constraint.type == ConstraintType.INEQ:
                 constraint_penalty += max(0, val)**2
-            elif con.type.name == "EQ":
+            elif constraint.type == ConstraintType.EQ:
                 constraint_penalty += val**2
 
         return f_val + penalty_coeff * constraint_penalty
