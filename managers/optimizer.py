@@ -89,12 +89,15 @@ class Optimizer:
                 break
 
             if p is None:
-                self.logger.error("❌ QP не решена. Прерывание.")
+                self.logger.error("❌ QP задача не решена.")
                 break
 
             alpha = self._line_search(x, p, grad)
             extended_p = p * alpha
             x_new = x + extended_p
+            if not self._check_constraints({name: val for name, val in zip(self.task.get_variable_names(), x_new)}):
+                self.logger.warning("❌ Нарушены ограничения после шага (x_new)")
+                break
             self.task.set_variable_values(x_new)
 
             self._log_iteration(iteration, x_new, grad, extended_p)
@@ -120,6 +123,20 @@ class Optimizer:
                 A.append(-grad)
                 b.append(val)
         return (np.array(A), np.array(b)) if A else (np.zeros((0, len(x))), np.zeros(0))
+    
+    def _evaluate_merit(self, x: np.ndarray, penalty_coeff: float = 10.0) -> float:
+        var_dict = dict(zip(self.task.get_variable_names(), x))
+        f_val = self.task.target.evaluate(var_dict)
+        
+        constraint_penalty = 0.0
+        for con in self.task.constraints:
+            val = con.evaluate(var_dict)
+            if con.type.name == "INEQ":
+                constraint_penalty += max(0, val)**2
+            elif con.type.name == "EQ":
+                constraint_penalty += val**2
+
+        return f_val + penalty_coeff * constraint_penalty
 
     def _line_search(self, x, p, grad):
         alpha = self._prev_alpha
@@ -127,41 +144,23 @@ class Optimizer:
         c1 = 1e-4
         max_trials = 20
 
-        x_dict = self.task.get_variable_dict()
+        phi_0 = self._evaluate_merit(x)
 
         for _ in range(max_trials):
             x_trial = x + alpha * p
+            phi_trial = self._evaluate_merit(x_trial)
 
-            trial_dict = {name: val for name, val in zip(self.task.get_variable_names(), x_trial)}
-
-            if not self._check_constraints_trial(trial_dict):
-                alpha *= beta
-                continue
-
-            f_new = self.task.target.evaluate(trial_dict)
-            f_curr = self.task.target.evaluate(x_dict)
-
-            if f_new <= f_curr + c1 * alpha * (grad @ p):
+            if phi_trial <= phi_0 + c1 * alpha * (grad @ p):
                 self._prev_alpha = alpha
                 return alpha
-
             alpha *= beta
 
         self._prev_alpha = alpha
         return alpha
 
-    def _check_constraints_trial(self, variable_dict):
+    def _check_constraints(self, variable_dict):
         for constraint in self.task.constraints:
             val = constraint.evaluate(variable_dict)
-            if constraint.type == ConstraintType.INEQ and val > self.task.config.tol:
-                return False
-            if constraint.type == ConstraintType.EQ and abs(val) > self.task.config.tol:
-                return False
-        return True
-
-    def _check_constraints(self):
-        for constraint in self.task.constraints:
-            val = constraint.evaluate(self.task.get_variable_dict())
             if constraint.type == ConstraintType.INEQ and val > self.task.config.tol:
                 return False
             if constraint.type == ConstraintType.EQ and abs(val) > self.task.config.tol:
