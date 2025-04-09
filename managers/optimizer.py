@@ -46,6 +46,19 @@ class Optimizer:
         x = x.astype(float)
         hess_func = hessian(lambda x: func.evaluate(dict(zip(self.task.get_variable_names(), x))))
         return hess_func(x)
+    
+    # TODO: доделать BFGS
+    def _update_hessian_bfgs(self, H, s, y):
+        rho = 1.0 / (y @ s)
+        
+        # избегаем деления на 0 и отрицательной кривизны
+        if rho <= 0 or np.isinf(rho):
+            return H
+
+        I = np.eye(len(s))
+        V = I - rho * np.outer(s, y)
+        H_new = V @ H @ V.T + rho * np.outer(s, s)
+        return H_new
 
     def _solve_qp_subproblem(self, Hessian, gradients, A, b):
         from cvxpy import Variable, Minimize, Problem, quad_form
@@ -64,9 +77,9 @@ class Optimizer:
 
         for iteration in range(self.task.config.max_iter):
             grad = self._compute_gradient(self.task.target, x)
-            hess = self._compute_hessian(self.task.target, x)
             # TODO: Add BFGS algorithm for Hessian
-            # hess = np.eye(len(x))
+            hess = self._compute_hessian(self.task.target, x)
+            
             A, b = self._prepare_constraints(x)
 
             try:
@@ -80,7 +93,7 @@ class Optimizer:
                 break
 
             alpha = self._line_search(x, p, grad)
-            extended_p = p
+            extended_p = p * alpha
             x_new = x + extended_p
             self.task.set_variable_values(x_new)
 
@@ -112,20 +125,39 @@ class Optimizer:
         alpha = self._prev_alpha
         beta = 0.5
         c1 = 1e-4
-        for _ in range(20):
+        max_trials = 20
+
+        x_dict = self.task.get_variable_dict()
+
+        for _ in range(max_trials):
             x_trial = x + alpha * p
-            self.task.set_variable_values(x_trial)
-            if not self._check_constraints():
+
+            trial_dict = {name: val for name, val in zip(self.task.get_variable_names(), x_trial)}
+
+            if not self._check_constraints_trial(trial_dict):
                 alpha *= beta
                 continue
-            f_new = self.task.target.evaluate(self.task.get_variable_dict())
-            f_curr = self.task.target.evaluate({v.name: v.value for v in self.task.variables})
+
+            f_new = self.task.target.evaluate(trial_dict)
+            f_curr = self.task.target.evaluate(x_dict)
+
             if f_new <= f_curr + c1 * alpha * (grad @ p):
+                self._prev_alpha = alpha
                 return alpha
+
             alpha *= beta
 
         self._prev_alpha = alpha
         return alpha
+
+    def _check_constraints_trial(self, variable_dict):
+        for constraint in self.task.constraints:
+            val = constraint.evaluate(variable_dict)
+            if constraint.type == ConstraintType.INEQ and val > self.task.config.tol:
+                return False
+            if constraint.type == ConstraintType.EQ and abs(val) > self.task.config.tol:
+                return False
+        return True
 
     def _check_constraints(self):
         for constraint in self.task.constraints:

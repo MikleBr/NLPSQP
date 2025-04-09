@@ -3,7 +3,7 @@ from managers.optimizer import Optimizer
 
 problem_json_parser = ProblemJSONParser()
 
-problem = problem_json_parser.createProblem('tests/paroboloid.json')
+problem = problem_json_parser.createProblem('tests/min_distance.json')
 
 optimizer = Optimizer(problem)
 optimizer.optimize()
