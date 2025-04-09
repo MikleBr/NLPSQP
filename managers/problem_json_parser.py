@@ -95,7 +95,14 @@ class ProblemJSONParser:
 
         constraint_name = constraintJson.get("name")
 
-        return Constraint(parsed_constraint, ConstraintType.INEQ, constraint_name)
+        constraintType = constraintJson.get("type")
+
+        if constraintType == "equality":
+            return Constraint(parsed_constraint, ConstraintType.EQ, constraint_name)
+        elif constraintType == "inequality":
+            return Constraint(parsed_constraint, ConstraintType.INEQ, constraint_name)
+        else:
+            raise ValueError(f"Неподдерживаемый тип ограничения: {constraintType}")
 
     def createProblem(self, filePath: str) -> OptimizationTask:
         try:

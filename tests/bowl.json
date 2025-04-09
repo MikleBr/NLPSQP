@@ -11,12 +11,12 @@
     "constraints": [
       {
         "type": "inequality",
-        "name": "Sum upper bound",
-        "expression": "(x + y + z - 2)"
+        "name": "x + y + z - 2 <=0",
+        "expression": "x + y + z - 2"
       },
       {
         "type": "inequality",
-        "name": "Sum lower bound",
+        "name": "x + y + z > 0",
         "expression": "-(x + y + z)"
       }
     ]
