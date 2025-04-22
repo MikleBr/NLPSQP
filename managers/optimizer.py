@@ -37,68 +37,68 @@ class Optimizer:
         self.logger.info(f"Number of variables: {len(self.task.variables)}")
         self.logger.info(f"Number of constraints: {len(self.task.constraints)}")
     
-    # def _compute_gradient(self, func, x: np.ndarray) -> np.ndarray:
-    #     x = x.astype(float)
-    #     grad_func = grad(lambda x: func.evaluate(dict(zip(self.task.get_variable_names(), x))))
-    #     return grad_func(x)
-
-    # def _compute_hessian(self, func, x: np.ndarray) -> np.ndarray:
-    #     x = x.astype(float)
-    #     hess_func = hessian(lambda x: func.evaluate(dict(zip(self.task.get_variable_names(), x))))
-    #     return hess_func(x)
-
-    def _compute_gradient(self, func, x: np.ndarray, eps: float = 1e-3) -> np.ndarray:
+    def _compute_gradient(self, func, x: np.ndarray) -> np.ndarray:
         x = x.astype(float)
-        grad = np.zeros_like(x)
-        f0 = func.evaluate(dict(zip(self.task.get_variable_names(), x)))
-        for i in range(len(x)):
-            x_eps = x.copy()
-            x_eps[i] += eps
-            f_eps = func.evaluate(dict(zip(self.task.get_variable_names(), x_eps)))
-            grad[i] = (f_eps - f0) / eps
-        return grad
+        grad_func = grad(lambda x: func.evaluate(dict(zip(self.task.get_variable_names(), x))))
+        return grad_func(x)
+
+    def _compute_hessian(self, func, x: np.ndarray) -> np.ndarray:
+        x = x.astype(float)
+        hess_func = hessian(lambda x: func.evaluate(dict(zip(self.task.get_variable_names(), x))))
+        return hess_func(x)
+
+    # def _compute_gradient(self, func, x: np.ndarray, eps: float = 1e-3) -> np.ndarray:
+    #     x = x.astype(float)
+    #     grad = np.zeros_like(x)
+    #     f0 = func.evaluate(dict(zip(self.task.get_variable_names(), x)))
+    #     for i in range(len(x)):
+    #         x_eps = x.copy()
+    #         x_eps[i] += eps
+    #         f_eps = func.evaluate(dict(zip(self.task.get_variable_names(), x_eps)))
+    #         grad[i] = (f_eps - f0) / eps
+    #     return grad
 
 
-    def _compute_hessian(self, func, x: np.ndarray, eps: float = 1e-3) -> np.ndarray:
-        x = np.asarray(x, dtype=float)
-        n = len(x)
-        hess = np.zeros((n, n))
-        var_names = self.task.get_variable_names()
+    # def _compute_hessian(self, func, x: np.ndarray, eps: float = 1e-3) -> np.ndarray:
+    #     x = np.asarray(x, dtype=float)
+    #     n = len(x)
+    #     hess = np.zeros((n, n))
+    #     var_names = self.task.get_variable_names()
 
-        for i in range(n):
-            for j in range(i, n):  # Вычисляем только верхнюю треугольную часть (симметрия)
-                # Создаем точки для вычисления второй производной
-                x_ijp = x.copy()
-                x_ijm = x.copy()
-                x_ipj_m = x.copy()
-                x_imj_p = x.copy()
+    #     for i in range(n):
+    #         for j in range(i, n):  # Вычисляем только верхнюю треугольную часть (симметрия)
+    #             # Создаем точки для вычисления второй производной
+    #             x_ijp = x.copy()
+    #             x_ijm = x.copy()
+    #             x_ipj_m = x.copy()
+    #             x_imj_p = x.copy()
 
-                x_ijp[i] += eps
-                x_ijp[j] += eps
+    #             x_ijp[i] += eps
+    #             x_ijp[j] += eps
 
-                x_ijm[i] -= eps
-                x_ijm[j] -= eps
+    #             x_ijm[i] -= eps
+    #             x_ijm[j] -= eps
 
-                x_ipj_m[i] += eps
-                x_ipj_m[j] -= eps
+    #             x_ipj_m[i] += eps
+    #             x_ipj_m[j] -= eps
 
-                x_imj_p[i] -= eps
-                x_imj_p[j] += eps
+    #             x_imj_p[i] -= eps
+    #             x_imj_p[j] += eps
 
-                # Вычисляем значения функции в этих точках
-                f1 = func.evaluate(dict(zip(var_names, x_ijp)))
-                f2 = func.evaluate(dict(zip(var_names, x_ijm)))
-                f3 = func.evaluate(dict(zip(var_names, x_ipj_m)))
-                f4 = func.evaluate(dict(zip(var_names, x_imj_p)))
+    #             # Вычисляем значения функции в этих точках
+    #             f1 = func.evaluate(dict(zip(var_names, x_ijp)))
+    #             f2 = func.evaluate(dict(zip(var_names, x_ijm)))
+    #             f3 = func.evaluate(dict(zip(var_names, x_ipj_m)))
+    #             f4 = func.evaluate(dict(zip(var_names, x_imj_p)))
 
-                # Формула для второй производной (центральные разности)
-                hess[i, j] = (f1 - f3 - f4 + f2) / (4 * eps ** 2)
+    #             # Формула для второй производной (центральные разности)
+    #             hess[i, j] = (f1 - f3 - f4 + f2) / (4 * eps ** 2)
 
-                # Используем симметрию гессиана
-                if i != j:
-                    hess[j, i] = hess[i, j]
+    #             # Используем симметрию гессиана
+    #             if i != j:
+    #                 hess[j, i] = hess[i, j]
 
-        return hess
+    #     return hess
     
     # TODO: доделать BFGS
     def _update_hessian_bfgs(self, H, s, y):
