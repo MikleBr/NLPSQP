@@ -5,3 +5,4 @@ __pycache__/
 
 # Logs
 *.log
+ansys_tmp/

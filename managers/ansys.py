@@ -20,16 +20,14 @@ def runAPDL(ansyscall,workingdir,scriptFilename):
     using the number of processors in: numprocessors
     returns the number of Ansys errors encountered in the run
     """
+
     inputFile = os.path.join(workingdir,
                              scriptFilename+".txt")
     # make the output file be the input file plus timestamp
-    outputFile = os.path.join(workingdir,
-                              scriptFilename+
-                              '{:%Y%m%d%H%M%S}'.format(datetime.datetime.now())+
-                              ".out")
+    outputFile = os.path.join(workingdir, "stress_result.txt")
     # keep the standard ansys jobname
     jobname = "file"
-    callString = ("\"{}\" -p ansys"
+    callString = ("\"{}\" -p ane3fl ansys"
               " -dir \"{}\" -j \"{}\" -s read"
               " -b -i \"{}\" -o \"{}\"").format(
                       ansyscall,
@@ -37,7 +35,7 @@ def runAPDL(ansyscall,workingdir,scriptFilename):
                       jobname,
                       inputFile,
                       outputFile)             
-#    print("invoking ansys with: ",callString)
+    print("invoking ansys with: ",callString)
     call(callString,shell=False)
     print('Start ANSYS') 
     # check output file for errors
@@ -53,7 +51,7 @@ def runAPDL(ansyscall,workingdir,scriptFilename):
                 print(line)
                 numerrors = int(line.split()[-1])
         searchfile.close()        
-    return(numerrors)
+    return(searchfile)
     
     
 
@@ -61,10 +59,13 @@ def run(scriptFilename, pathansys, pathwork):
     global error 
     ansyscall = pathansys
     workingdir = pathwork
-    nErr = runAPDL(ansyscall,
+    if not os.path.isfile(pathansys):
+        raise FileNotFoundError(f"ANSYS executable not found: {pathansys}")
+
+    result_filename = runAPDL(ansyscall,
                    workingdir,
                    scriptFilename)
-    return nErr
+    return result_filename
 #    print ("number of Ansys errors: ",nErr)
     
     
