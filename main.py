@@ -28,10 +28,21 @@ def stress_parser(filename):
                         raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
     raise RuntimeError("Не удалось извлечь значение напряжения")
 
+# target=AnsysMacroTargetFunction(
+#     macro_template_path="kirsh.txt",
+#     ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
+#     workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
+#     output_filename="results.txt",
+#     result_parser=stress_parser
+# )
+
+# print(target.evaluate({"a": 0.5, "b": 0.5}))
+# print(target.evaluate({"a": 0.2, "b": 0.3}))
+
 task = OptimizationTask(
     variables=[
-        DesignVariable(name="a", value=0.5, lower=0.1, upper=5.0),
-        DesignVariable(name="b", value=0.5, lower=0.1, upper=10.0)
+        DesignVariable(name="a", value=0.2, lower=0.1, upper=5.0),
+        DesignVariable(name="b", value=0.1, lower=0.1, upper=10.0)
     ],
     target=AnsysMacroTargetFunction(
         macro_template_path="kirsh.txt",
