@@ -15,6 +15,11 @@ class Optimizer:
         self._last_step_size = 0.0
         self._prev_alpha = 1.0
 
+        # Для отслеживания истории оптимизации
+        self.iteration_history = []
+        self.f_history = []
+        self.grad_norm_history = []
+
     def _setup_logger(self):
         self.logger = logging.getLogger('SQPOptimizer')
         self.logger.setLevel(logging.INFO)
@@ -50,7 +55,7 @@ class Optimizer:
 
     def _update_hessian_bfgs(self, H, s, y):
         rho = 1.0 / (y @ s)
-        
+
         # избегаем деления на 0 и отрицательной кривизны
         if rho <= 0 or np.isinf(rho):
             return H
@@ -93,7 +98,7 @@ class Optimizer:
             grad = self._compute_gradient(self.task.target, x)
             if s_prev is not None and y_prev is not None:
                 hess = self._update_hessian_bfgs(hess, s_prev, y_prev)
-            
+
             A, b = self._prepare_constraints(x)
 
             try:
@@ -137,11 +142,11 @@ class Optimizer:
                 A.append(-grad)
                 b.append(val)
         return (np.array(A), np.array(b)) if A else (np.zeros((0, len(x))), np.zeros(0))
-    
+
     def _evaluate_merit(self, x: np.ndarray, penalty_coeff: float = 10.0) -> float:
         var_dict = dict(zip(self.task.get_variable_names(), x))
         f_val = self.task.target.evaluate(var_dict)
-        
+
         constraint_penalty = 0.0
         for constraint in self.task.constraints:
             val = constraint.evaluate(var_dict)
@@ -182,9 +187,18 @@ class Optimizer:
         return True
 
     def _log_iteration(self, i, x, grad, step):
+        f_value = self.task.target.evaluate(self.task.get_variable_dict())
+        grad_norm = np.linalg.norm(grad)
+        step_norm = np.linalg.norm(step)
+
+        # Сохраняем историю для построения графиков
+        self.iteration_history.append(i)
+        self.f_history.append(f_value)
+        self.grad_norm_history.append(grad_norm)
+
         self.logger.info(
-            f"Iter {i}: f(x) = {self.task.target.evaluate(self.task.get_variable_dict()):.6f} | "
-            f"||grad(f)|| = {np.linalg.norm(grad):.6f} | Step = {np.linalg.norm(step):.6f}"
+            f"Iter {i}: f(x) = {f_value:.6f} | "
+            f"||grad(f)|| = {grad_norm:.6f} | Step = {step_norm:.6f}"
         )
         for variable in self.task.variables:
             self.logger.info(f"-- {variable.name}: {variable.value:.6f} | ")
