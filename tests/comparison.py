@@ -54,12 +54,12 @@ class OptimizationComparisonTest(unittest.TestCase):
 
         bounds = [(v.lower, v.upper) for v in problem.variables]
 
-        res = minimize(f, x0, jac=jac, constraints=constraints, bounds=bounds, method='SLSQP')
+        res = minimize(f, x0, jac=jac, constraints=constraints, bounds=bounds, method='Nelder-Mead')
         print(problem.target.evaluate(dict(zip(names, res.x))))
         return res.x
 
     def test_sqp_vs_scipy(self):
-        problem_path = "tests/rosenbrock_valley.json"
+        problem_path = "tests/bowl.json"
         task = self.load_problem(problem_path)
 
         optimizer = Optimizer(task)

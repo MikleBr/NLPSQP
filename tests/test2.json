@@ -7,16 +7,16 @@
     {
       "identifier": "x",
       "name": "x",
-      "defaultValue": 100,
+      "defaultValue": 5,
       "lowerBound": -5,
-      "upperBound": 100
+      "upperBound": 10
     },
     {
       "identifier": "y",
       "name": "y",
-      "defaultValue": 100,
+      "defaultValue": 5,
       "lowerBound": 0,
-      "upperBound": 100
+      "upperBound": 10
     }
   ],
   "constraints": [

@@ -7,12 +7,12 @@
     {
       "identifier": "x",
       "name": "x",
-      "defaultValue": 100
+      "defaultValue": 1000
     },
     {
       "identifier": "y",
       "name": "y",
-      "defaultValue": 100
+      "defaultValue": 1000
     }
   ],
   "constraints": [

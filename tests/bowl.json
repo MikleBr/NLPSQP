@@ -1,23 +1,23 @@
 {
-    "target_function": {
-      "name": "Quadratic Bowl",
-      "expression": "x**2 + y**2 + z**2"
+  "target_function": {
+    "name": "Quadratic Bowl",
+    "expression": "x**2 + y**2 + z**2"
+  },
+  "variables": [
+    { "identifier": "x", "name": "x", "defaultValue": 2 },
+    { "identifier": "y", "name": "y", "defaultValue": -1 },
+    { "identifier": "z", "name": "z", "defaultValue": 0.5 }
+  ],
+  "constraints": [
+    {
+      "type": "inequality",
+      "name": "x + y + z - 2 <=0",
+      "expression": "x + y + z - 2"
     },
-    "variables": [
-      { "identifier": "x", "name": "x", "defaultValue": 2 },
-      { "identifier": "y", "name": "y", "defaultValue": -1 },
-      { "identifier": "z", "name": "z", "defaultValue": 0.5 }
-    ],
-    "constraints": [
-      {
-        "type": "inequality",
-        "name": "x + y + z - 2 <=0",
-        "expression": "x + y + z - 2"
-      },
-      {
-        "type": "inequality",
-        "name": "x + y + z > 0",
-        "expression": "-(x + y + z)"
-      }
-    ]
-  }
+    {
+      "type": "inequality",
+      "name": "x + y + z > 0",
+      "expression": "-(x + y + z)"
+    }
+  ]
+}

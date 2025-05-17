@@ -1,0 +1,41 @@
+{
+  "target_function": {
+    "name": "Demo 2",
+    "expression": "-(x * y * z)"
+  },
+  "variables": [
+    {
+      "identifier": "x",
+      "name": "x",
+      "defaultValue": 24,
+      "lowerBound": 0,
+      "upperBound": 42
+    },
+    {
+      "identifier": "y",
+      "name": "y",
+      "defaultValue": 12,
+      "lowerBound": 0,
+      "upperBound": 42
+    },
+    {
+      "identifier": "z",
+      "name": "z",
+      "defaultValue": 12,
+      "lowerBound": 0,
+      "upperBound": 42
+    }
+  ],
+  "constraints": [
+    {
+      "type": "inequality",
+      "name": "x + y + 2 * z <= 72",
+      "expression": "x + 2 * y + 2 * z - 72"
+    },
+    {
+      "type": "inequality",
+      "name": "x + y + 2 * z >= 0",
+      "expression": "- (x + y + 2 * z)"
+    }
+  ]
+}

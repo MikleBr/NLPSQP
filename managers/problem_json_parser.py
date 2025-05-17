@@ -131,7 +131,7 @@ class ProblemJSONParser:
                 variables=variable_list,
                 target=target_function,
                 constraints=parsed_constraints,
-                config=OptimizationConfig()
+                config=OptimizationConfig(max_iter=1000)
             )
 
         except FileNotFoundError:

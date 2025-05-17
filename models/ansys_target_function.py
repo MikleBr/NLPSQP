@@ -1,3 +1,5 @@
+import json
+import hashlib
 import os
 import re
 from managers.ansys import run
@@ -41,22 +43,28 @@ class AnsysMacroTargetFunction(TargetFunction):
         workdir: str,
         output_filename: str,
         result_parser,
-        name="AnsysTargetFunction"
+        name="AnsysTargetFunction",
+        use_cache=True
     ):
-        """
-        Целевая функция, использующая ANSYS-макрос с подстановкой параметров.
-        """
         self.template_path = macro_template_path
         self.ansys_path = ansys_path
         self.workdir = workdir
         self.output_filename = output_filename
         self.result_parser = result_parser
+        self.use_cache = use_cache
+        self.cache = {}
         super().__init__(self.evaluate, name)
 
+    def _make_hash(self, variables: dict) -> str:
+        sorted_items = sorted((k, float(v)) for k, v in variables.items())
+        hash_str = json.dumps(sorted_items, sort_keys=True)
+        return hashlib.md5(hash_str.encode()).hexdigest()
+
     def evaluate(self, variables: dict) -> float:
-        """
-        Подставляет значения переменных в макрос, запускает ANSYS и возвращает результат.
-        """
+        key = self._make_hash(variables)
+        if self.use_cache and key in self.cache:
+            return self.cache[key]
+
         # 1. Чтение шаблона макроса
         with open(self.template_path, "r") as f:
             macro = f.read()
@@ -81,4 +89,9 @@ class AnsysMacroTargetFunction(TargetFunction):
         if not os.path.exists(result_file):
             raise RuntimeError(f"Файл результата не найден: {result_file}")
 
-        return self.result_parser(result_file)
+        result = self.result_parser(result_file)
+
+        if self.use_cache:
+            self.cache[key] = result
+
+        return result
