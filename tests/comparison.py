@@ -59,7 +59,7 @@ class OptimizationComparisonTest(unittest.TestCase):
         return res.x
 
     def test_sqp_vs_scipy(self):
-        problem_path = "tests/bowl.json"
+        problem_path = "tests/fortran.json"
         task = self.load_problem(problem_path)
 
         optimizer = Optimizer(task)

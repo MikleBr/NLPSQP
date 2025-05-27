@@ -65,17 +65,14 @@ class AnsysMacroTargetFunction(TargetFunction):
         if self.use_cache and key in self.cache:
             return self.cache[key]
 
-        # 1. Чтение шаблона макроса
         with open(self.template_path, "r") as f:
             macro = f.read()
 
-        # 2. Подстановка значений
         for var, val in variables.items():
             val_float = unwrap_value(val)
             pattern = rf"(?m)^(\s*{var}\s*=\s*).*$"
             macro = re.sub(pattern, lambda m: f"{m.group(1)}{val_float}", macro)
 
-        # 3. Запись итогового макроса
         script_filename = "file"
         macro_path = os.path.join(self.workdir, script_filename + ".txt")
         with open(macro_path, "w") as f:

@@ -1,0 +1,63 @@
+r1=0.01
+r2=0.02
+l1=0.5
+l=1
+E=2.1e11
+nu=0.3
+es=0.05
+force=-100
+
+/prep7
+k,1,
+k,2,l1
+k,3,l
+lstr,1,2
+lstr,2,3
+
+mp,ex,1,E
+mp,prxy,1,nu
+
+et,1,beam188
+
+SECTYPE,   1, BEAM, CSOLID, , 0 
+SECOFFSET, CENT 
+SECDATA,r1,5,5,0,0,0,0,0,0,0,0,
+
+SECTYPE,   2, BEAM, CSOLID, , 0 
+SECOFFSET, CENT 
+SECDATA,r2,5,5,0,0,0,0,0,0,0,0,
+
+lsel,,line,,1
+latt,,,,,,,1
+
+lsel,,line,,2
+latt,,,,,,,2
+
+allsel,all
+lesize,all,es
+lmesh,all
+/eshape,1
+
+/sol
+nsel,,loc,x,-0.001*l,0.001*l
+n1=ndnext(0)
+d,all,all,0
+nsel,,loc,x,l-0.001*l,l+0.001*l
+n2=ndnext(0)
+
+f,all,fy,force
+allsel,all
+
+solve
+
+/post1
+set,last
+rsys,1
+nsort,s,y
+*get,smax,sort,0,max
+
+area=h*h-atan(1)*4*a*b
+
+*cfopen,results.txt
+*cfwrite,'Smax = ',smax
+*cfclose
