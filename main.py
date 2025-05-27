@@ -28,45 +28,68 @@ def stress_parser(filename):
                         raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
     raise RuntimeError("Не удалось извлечь значение напряжения")
 
+def mass_parser(filename):
+    with open(filename, 'r') as f:
+        for line in f:
+            print(line)
+            if "Mass," in line:
+                parts = line.strip().split("Mass,")
+                if len(parts) > 1:
+                    try:
+                        return float(parts[1])
+                    except ValueError:
+                        raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
+    raise RuntimeError("Не удалось извлечь значение напряжения")
+
+def umax_parser(filename):
+    with open(filename, 'r') as f:
+        for line in f:
+            print(line)
+            if "Umax," in line:
+                parts = line.strip().split("Umax,")
+                if len(parts) > 1:
+                    try:
+                        return float(parts[1])
+                    except ValueError:
+                        raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
+    raise RuntimeError("Не удалось извлечь значение напряжения")
+
 target = AnsysMacroTargetFunction(
         macro_template_path="beam.txt",
         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
         workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
         output_filename="results.txt",
-        result_parser=stress_parser
+        result_parser=mass_parser
+)
+
+ansysConstraint = AnsysMacroTargetFunction(
+        macro_template_path="beam.txt",
+        ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
+        workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
+        output_filename="results.txt",
+        result_parser=umax_parser
     )
 
-target.evaluate({
-    "r1": 0.05,
-    "r2": 0.05,
-})
+con1 = Constraint(func=lambda params: ansysConstraint.evaluate(params) - 0.002, type=ConstraintType.INEQ)
 
-# target=AnsysMacroTargetFunction(
-#     macro_template_path="kirsh.txt",
-#     ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
-#     workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
-#     output_filename="results.txt",
-#     result_parser=stress_parser
-# )
 
-# print(target.evaluate({"a": 0.5, "b": 0.5}))
-# print(target.evaluate({"a": 0.2, "b": 0.3}))
 
-# task = OptimizationTask(
-#     variables=[
-#         DesignVariable(name="a", value=0.1, lower=0.1, upper=5.0),
-#         DesignVariable(name="b", value=0.1, lower=0.1, upper=10.0)
-#     ],
-#     target=AnsysMacroTargetFunction(
-#         macro_template_path="beam.txt",
-#         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
-#         workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
-#         output_filename="results.txt",
-#         result_parser=stress_parser
-#     ),
-#     constraints=[],
-#     config=OptimizationConfig()
-# )
+# res = ansysConstraint.evaluate({
+#     "r1": 0.02,
+#     "r2": 0.02,
+# })
 
-# optimizer = Optimizer(task)
-# optimizer.optimize()  
+# print(res)
+
+task = OptimizationTask(
+    variables=[
+        DesignVariable(name="r1", value=0.04, upper=0.1),
+        DesignVariable(name="r2", value=0.02, upper=0.1)
+    ],
+    target=target,
+    constraints=[con1],
+    config=OptimizationConfig(penalty_coeff=100)
+)
+
+optimizer = Optimizer(task)
+optimizer.optimize()
