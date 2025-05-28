@@ -54,6 +54,7 @@ def umax_parser(filename):
                         raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
     raise RuntimeError("Не удалось извлечь значение напряжения")
 
+
 target = AnsysMacroTargetFunction(
         macro_template_path="beam.txt",
         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
@@ -62,15 +63,24 @@ target = AnsysMacroTargetFunction(
         result_parser=mass_parser
 )
 
-ansysConstraint = AnsysMacroTargetFunction(
+deformationAnsysFunction = AnsysMacroTargetFunction(
         macro_template_path="beam.txt",
         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
         workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
         output_filename="results.txt",
         result_parser=umax_parser
-    )
+)
 
-con1 = Constraint(func=lambda params: ansysConstraint.evaluate(params) - 0.002, type=ConstraintType.INEQ)
+stressAnsysFunction = AnsysMacroTargetFunction(
+        macro_template_path="beam.txt",
+        ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
+        workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
+        output_filename="results.txt",
+        result_parser=umax_parser
+)
+
+deformationConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 0.002, type=ConstraintType.INEQ)
+stressConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 5000000, type=ConstraintType.INEQ)
 
 
 
@@ -83,12 +93,12 @@ con1 = Constraint(func=lambda params: ansysConstraint.evaluate(params) - 0.002, 
 
 task = OptimizationTask(
     variables=[
-        DesignVariable(name="r1", value=0.04, upper=0.1),
-        DesignVariable(name="r2", value=0.02, upper=0.1)
+        DesignVariable(name="r1", value=0.09, upper=0.1),
+        DesignVariable(name="r2", value=0.09, upper=0.1)
     ],
     target=target,
-    constraints=[con1],
-    config=OptimizationConfig(penalty_coeff=100)
+    constraints=[deformationConstraint, stressConstraint],
+    config=OptimizationConfig(penalty_coeff=100, max_iter=50, delta_tol=0.001)
 )
 
 optimizer = Optimizer(task)

@@ -15,6 +15,7 @@ class Optimizer:
         self._last_step_size = 0.0
         self._prev_alpha = 1.0
 
+        self._feasible_steps = 0
         # Для отслеживания истории оптимизации
         self.iteration_history = []
         self.f_history = []
@@ -114,9 +115,25 @@ class Optimizer:
             alpha = self._line_search(x, p, grad)
             extended_p = p * alpha
             x_new = x + extended_p
-            if not self._check_constraints({name: val for name, val in zip(self.task.get_variable_names(), x_new)}):
-                self.logger.warning("❌ Нарушены ограничения после шага (x_new)")
-                break
+        
+            # Пробуем уменьшать alpha, если x_new нарушает ограничения
+            for attempt in range(2):
+                x_new = x + alpha * p
+                if self._check_constraints(dict(zip(self.task.get_variable_names(), x_new))):
+                    self._feasible_steps += 1
+                    if self._feasible_steps >= 5 and self.task.config.penalty_coeff > 10:
+                        self.task.config.penalty_coeff *= 0.5
+                        self.logger.info(f"^ Уменьшаем penalty_coeff до {self.task.config.penalty_coeff}")
+                    break
+                alpha *= 0.5  # уменьшаем шаг
+                self.logger.warning(f"X restrictions with alpha = {alpha*2: .4f}, try alpha = {alpha: .4f}")
+            else:
+                self.logger.error("X failed to find a permissible step. We increase the fine and continue.")
+                self.task.config.penalty_coeff *= 2
+                continue
+            
+
+
             self.task.set_variable_values(x_new)
 
             self._log_iteration(iteration, x_new, grad, extended_p)
@@ -143,7 +160,10 @@ class Optimizer:
                 b.append(val)
         return (np.array(A), np.array(b)) if A else (np.zeros((0, len(x))), np.zeros(0))
 
-    def _evaluate_merit(self, x: np.ndarray, penalty_coeff: float = 10.0) -> float:
+    def _evaluate_merit(self, x: np.ndarray, penalty_coeff: float = None) -> float:
+        if penalty_coeff is None:
+            penalty_coeff = self.task.config.penalty_coeff
+
         var_dict = dict(zip(self.task.get_variable_names(), x))
         f_val = self.task.target.evaluate(var_dict)
 
@@ -155,7 +175,8 @@ class Optimizer:
             elif constraint.type == ConstraintType.EQ:
                 constraint_penalty += val**2
 
-        return f_val + penalty_coeff * constraint_penalty
+        merit = f_val + penalty_coeff * constraint_penalty
+        return merit
 
     def _line_search(self, x, p, grad):
         alpha = self._prev_alpha
@@ -200,6 +221,8 @@ class Optimizer:
             f"Iter {i}: f(x) = {f_value:.6f} | "
             f"||grad(f)|| = {grad_norm:.6f} | Step = {step_norm:.6f}"
         )
+        self.logger.info(f"Penalty coeff: {self.task.config.penalty_coeff}")
+
         for variable in self.task.variables:
             self.logger.info(f"-- {variable.name}: {variable.value:.6f} | ")
 
