@@ -88,7 +88,12 @@ class Optimizer:
         constraints = [A @ x <= b] if A.shape[0] > 0 else []
         prob = Problem(objective, constraints)
         prob.solve()
-        return x.value
+
+        if x.value is None:
+            raise RuntimeError("QP subproblem failed to solve.")
+
+        lambdas = np.array([con.dual_value for con in constraints])
+        return x.value, lambdas
 
     def optimize(self):
         x = self.task.get_variable_values()
@@ -103,7 +108,7 @@ class Optimizer:
             A, b = self._prepare_constraints(x)
 
             try:
-                p = self._solve_qp_subproblem(hess, grad, A, b)
+                p, lambdas = self._solve_qp_subproblem(hess, grad, A, b)
             except Exception as e:
                 self.logger.error(f"QP solver error: {e}")
                 break
@@ -112,27 +117,19 @@ class Optimizer:
                 self.logger.error("❌ QP задача не решена.")
                 break
 
+
+            # Обновляем коэф
+            rho_new = np.max(np.abs(lambdas)) * 1.1
+            self.task.config.penalty_coeff = max(rho_new, 1.0)
+
+            # Линейный поиск
             alpha = self._line_search(x, p, grad)
             extended_p = p * alpha
             x_new = x + extended_p
         
-            # Пробуем уменьшать alpha, если x_new нарушает ограничения
-            for attempt in range(2):
-                x_new = x + alpha * p
-                if self._check_constraints(dict(zip(self.task.get_variable_names(), x_new))):
-                    self._feasible_steps += 1
-                    if self._feasible_steps >= 5 and self.task.config.penalty_coeff > 10:
-                        self.task.config.penalty_coeff *= 0.5
-                        self.logger.info(f"^ Уменьшаем penalty_coeff до {self.task.config.penalty_coeff}")
-                    break
-                alpha *= 0.5  # уменьшаем шаг
-                self.logger.warning(f"X restrictions with alpha = {alpha*2: .4f}, try alpha = {alpha: .4f}")
-            else:
-                self.logger.error("X failed to find a permissible step. We increase the fine and continue.")
-                self.task.config.penalty_coeff *= 2
-                continue
-            
-
+            constraints_observed = self._check_constraints(dict(zip(self.task.get_variable_names(), x_new)))
+            if not constraints_observed:
+                self.logger.error("Constraints are violated")
 
             self.task.set_variable_values(x_new)
 

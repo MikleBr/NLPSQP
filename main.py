@@ -83,14 +83,6 @@ deformationConstraint = Constraint(func=lambda params: deformationAnsysFunction.
 stressConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 5000000, type=ConstraintType.INEQ)
 
 
-
-# res = ansysConstraint.evaluate({
-#     "r1": 0.02,
-#     "r2": 0.02,
-# })
-
-# print(res)
-
 task = OptimizationTask(
     variables=[
         DesignVariable(name="r1", value=0.09, upper=0.1),
@@ -98,7 +90,7 @@ task = OptimizationTask(
     ],
     target=target,
     constraints=[deformationConstraint, stressConstraint],
-    config=OptimizationConfig(penalty_coeff=100, max_iter=50, delta_tol=0.001)
+    config=OptimizationConfig(max_iter=50)
 )
 
 optimizer = Optimizer(task)
