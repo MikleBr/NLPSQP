@@ -43,7 +43,7 @@ class Optimizer:
         self.logger.info(f"Number of variables: {len(self.task.variables)}")
         self.logger.info(f"Number of constraints: {len(self.task.constraints)}")
 
-    def _compute_gradient(self, func, x: np.ndarray, eps: float = 1e-4) -> np.ndarray:
+    def _compute_gradient(self, func, x: np.ndarray, eps: float = 1e-3) -> np.ndarray:
         x = x.astype(float)
         grad = np.zeros_like(x)
         f0 = func.evaluate(dict(zip(self.task.get_variable_names(), x)))
@@ -93,7 +93,7 @@ class Optimizer:
             raise RuntimeError("QP subproblem failed to solve.")
 
         lambdas = np.array([con.dual_value for con in constraints])
-        return x.value, lambdas
+        return x.value
 
     def optimize(self):
         x = self.task.get_variable_values()
@@ -101,29 +101,35 @@ class Optimizer:
         s_prev, y_prev = None, None
 
         for iteration in range(self.task.config.max_iter):
+            self.logger.info(f"Start step {iteration}")
+            
             grad = self._compute_gradient(self.task.target, x)
             if s_prev is not None and y_prev is not None:
                 hess = self._update_hessian_bfgs(hess, s_prev, y_prev)
 
+            self.logger.info(f"grad(f): {grad} | grad_norm = {np.linalg.norm(grad)}")
+
             A, b = self._prepare_constraints(x)
 
             try:
-                p, lambdas = self._solve_qp_subproblem(hess, grad, A, b)
+                p = self._solve_qp_subproblem(hess, grad, A, b)
             except Exception as e:
                 self.logger.error(f"QP solver error: {e}")
                 break
 
-            if p is None:
-                self.logger.error("❌ QP задача не решена.")
-                break
+            self.logger.info(f"QP variables: {p}")
 
 
             # Обновляем коэф
-            rho_new = np.max(np.abs(lambdas)) * 1.1
+            # rho_new = np.max(np.abs(lambdas)) * 1.1
+            rho_new = 10
             self.task.config.penalty_coeff = max(rho_new, 1.0)
 
             # Линейный поиск
             alpha = self._line_search(x, p, grad)
+
+            self.logger.info(f"Iter {iteration}: penalty_coeff = {self.task.config.penalty_coeff} | "f"||alpha|| = {alpha}")
+            
             extended_p = p * alpha
             x_new = x + extended_p
         
@@ -144,17 +150,17 @@ class Optimizer:
 
     def _prepare_constraints(self, x):
         A, b = [], []
-        for con in self.task.constraints:
-            grad = self._compute_gradient(con, x)
-            val = con.evaluate(self.task.get_variable_dict())
-            if con.type == ConstraintType.INEQ:
-                A.append(grad)
-                b.append(-val)
-            elif con.type == ConstraintType.EQ:
-                A.append(grad)
-                b.append(-val)
-                A.append(-grad)
-                b.append(val)
+        for constraint in self.task.constraints:
+            constraint_gradient = self._compute_gradient(constraint, x)
+            constraint_value = constraint.evaluate(self.task.get_variable_dict())
+            if constraint.type == ConstraintType.INEQ:
+                A.append(constraint_gradient)
+                b.append(-constraint_value)
+            elif constraint.type == ConstraintType.EQ:
+                A.append(constraint_gradient)
+                b.append(-constraint_value)
+                A.append(-constraint_gradient)
+                b.append(constraint_value)
         return (np.array(A), np.array(b)) if A else (np.zeros((0, len(x))), np.zeros(0))
 
     def _evaluate_merit(self, x: np.ndarray, penalty_coeff: float = None) -> float:
@@ -215,10 +221,9 @@ class Optimizer:
         self.grad_norm_history.append(grad_norm)
 
         self.logger.info(
-            f"Iter {i}: f(x) = {f_value:.6f} | "
-            f"||grad(f)|| = {grad_norm:.6f} | Step = {step_norm:.6f}"
+            f"f(x) = {f_value:.6f} | "
+            f"Step = {step_norm:.6f}"
         )
-        self.logger.info(f"Penalty coeff: {self.task.config.penalty_coeff}")
 
         for variable in self.task.variables:
             self.logger.info(f"-- {variable.name}: {variable.value:.6f} | ")
