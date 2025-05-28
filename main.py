@@ -80,7 +80,7 @@ stressAnsysFunction = AnsysMacroTargetFunction(
 )
 
 deformationConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 0.002, type=ConstraintType.INEQ)
-stressConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 5000000, type=ConstraintType.INEQ)
+stressConstraint = Constraint(func=lambda params: stressAnsysFunction.evaluate(params) - 5000000, type=ConstraintType.INEQ)
 
 
 task = OptimizationTask(
@@ -89,7 +89,7 @@ task = OptimizationTask(
         DesignVariable(name="r2", value=0.09, upper=0.1)
     ],
     target=target,
-    constraints=[deformationConstraint, stressConstraint],
+    constraints=[deformationConstraint],
     config=OptimizationConfig(max_iter=50)
 )
 
