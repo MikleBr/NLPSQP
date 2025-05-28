@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 from models.optimization_task import OptimizationTask
 from models.constraint import ConstraintType
-from autograd import grad, hessian
 
 
 class Optimizer:
@@ -43,7 +42,7 @@ class Optimizer:
         self.logger.info(f"Number of variables: {len(self.task.variables)}")
         self.logger.info(f"Number of constraints: {len(self.task.constraints)}")
 
-    def _compute_gradient(self, func, x: np.ndarray, eps: float = 1e-3) -> np.ndarray:
+    def _compute_gradient(self, func, x: np.ndarray, eps: float = 1e-5) -> np.ndarray:
         x = x.astype(float)
         grad = np.zeros_like(x)
         f0 = func.evaluate(dict(zip(self.task.get_variable_names(), x)))
@@ -93,7 +92,7 @@ class Optimizer:
             raise RuntimeError("QP subproblem failed to solve.")
 
         lambdas = np.array([con.dual_value for con in constraints])
-        return x.value
+        return x.value, lambdas
 
     def optimize(self):
         x = self.task.get_variable_values()
@@ -112,7 +111,7 @@ class Optimizer:
             A, b = self._prepare_constraints(x)
 
             try:
-                p = self._solve_qp_subproblem(hess, grad, A, b)
+                p, lambdas = self._solve_qp_subproblem(hess, grad, A, b)
             except Exception as e:
                 self.logger.error(f"QP solver error: {e}")
                 break
@@ -121,8 +120,7 @@ class Optimizer:
 
 
             # Обновляем коэф
-            # rho_new = np.max(np.abs(lambdas)) * 1.1
-            rho_new = 10
+            rho_new = np.max(np.abs(lambdas)) * 1.1
             self.task.config.penalty_coeff = max(rho_new, 1.0)
 
             # Линейный поиск

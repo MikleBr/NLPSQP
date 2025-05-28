@@ -76,7 +76,7 @@ stressAnsysFunction = AnsysMacroTargetFunction(
         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
         workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
         output_filename="results.txt",
-        result_parser=umax_parser
+        result_parser=stress_parser
 )
 
 deformationConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 0.002, type=ConstraintType.INEQ)
