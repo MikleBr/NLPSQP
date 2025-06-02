@@ -28,69 +28,29 @@ def stress_parser(filename):
                         raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
     raise RuntimeError("Не удалось извлечь значение напряжения")
 
-def mass_parser(filename):
-    with open(filename, 'r') as f:
-        for line in f:
-            print(line)
-            if "Mass," in line:
-                parts = line.strip().split("Mass,")
-                if len(parts) > 1:
-                    try:
-                        return float(parts[1])
-                    except ValueError:
-                        raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
-    raise RuntimeError("Не удалось извлечь значение напряжения")
-
-def umax_parser(filename):
-    with open(filename, 'r') as f:
-        for line in f:
-            print(line)
-            if "Umax," in line:
-                parts = line.strip().split("Umax,")
-                if len(parts) > 1:
-                    try:
-                        return float(parts[1])
-                    except ValueError:
-                        raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
-    raise RuntimeError("Не удалось извлечь значение напряжения")
-
-
 target = AnsysMacroTargetFunction(
-        macro_template_path="beam.txt",
-        ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
-        workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
-        output_filename="results.txt",
-        result_parser=mass_parser
-)
-
-deformationAnsysFunction = AnsysMacroTargetFunction(
-        macro_template_path="beam.txt",
-        ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
-        workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
-        output_filename="results.txt",
-        result_parser=umax_parser
-)
-
-stressAnsysFunction = AnsysMacroTargetFunction(
-        macro_template_path="beam.txt",
+        macro_template_path="demo2.txt",
         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
         workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
         output_filename="results.txt",
         result_parser=stress_parser
 )
 
-deformationConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 0.002, type=ConstraintType.INEQ)
-stressConstraint = Constraint(func=lambda params: stressAnsysFunction.evaluate(params) - 5000000, type=ConstraintType.INEQ)
+# res = target.evaluate({
+#     "DIAG_BEAM_POSITION": 10,
+#     # "r2": 0.02726
+# })
+
+# print(res)
 
 
 task = OptimizationTask(
     variables=[
-        DesignVariable(name="r1", value=0.09, upper=0.1),
-        DesignVariable(name="r2", value=0.09, upper=0.1)
+        DesignVariable(name="DIAG_BEAM_POSITION", value=25, lower=5, upper=30),
     ],
     target=target,
-    constraints=[deformationConstraint],
-    config=OptimizationConfig(max_iter=50)
+    constraints=[],
+    config=OptimizationConfig(max_iter=50, tol = 1e-6, grad_eps=1e-6)
 )
 
 optimizer = Optimizer(task)

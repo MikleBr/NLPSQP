@@ -1,0 +1,87 @@
+FINISH
+/CLEAR
+
+/PREP7
+
+H_GEOM       = 50.0  ! мм, Общая высота конструкции. Также используется как общая ширина.
+S_GEOM       = 4.0   ! мм, Толщина вертикальной и горизонтальной балок.          
+DIAG_BEAM_POSITION  = 10  ! мм, положение от правого края горизонтальной балки до левого края диагональной
+
+PRESSURE_VAL = 100000.0
+
+E_MAT   = 2.0E11
+NU_MAT  = 0.3
+DENSITY = 7850
+
+BLC4, 0, 0, S_GEOM, H_GEOM
+BLC4, S_GEOM, H_GEOM - S_GEOM, H_GEOM - S_GEOM, S_GEOM
+
+POSITION = H_GEOM - S_GEOM - DIAG_BEAM_POSITION
+
+alpha = ATAN(POSITION / (H_GEOM - S_GEOM))
+
+diag_bottom_left_x = S_GEOM
+diag_bottom_left_y = S_GEOM / SIN(alpha)
+
+diag_bottom_right_x = S_GEOM
+diag_bottom_right_y = 0
+
+diag_top_right_x = S_GEOM + POSITION
+diag_top_right_y = H_GEOM - S_GEOM
+
+diag_top_left_x = diag_top_right_x - S_GEOM / COS(alpha)
+diag_top_left_y = H_GEOM - S_GEOM
+
+KMAX_VAL = 0
+*GET, KMAX_VAL, KP, 0, COUNT  ! Получаем общее количество существующих ключевых точек
+KP_START_DIAG = KMAX_VAL + 1  ! Начальный номер для новых ключевых точек диагонали
+
+K, KP_START_DIAG,     diag_bottom_left_x,    diag_bottom_left_y
+K, KP_START_DIAG + 1, diag_bottom_right_x,   diag_bottom_right_y
+K, KP_START_DIAG + 2, diag_top_right_x,      diag_top_right_y
+K, KP_START_DIAG + 3, diag_top_left_x,       diag_top_left_y
+
+A, KP_START_DIAG, KP_START_DIAG + 1, KP_START_DIAG + 2, KP_START_DIAG + 3
+
+ALLSEL,ALL
+NUMMRG,KP,1E-6
+AGLUE,ALL
+ALLSEL,ALL
+
+MP, EX,   1, E_MAT
+MP, NUXY, 1, NU_MAT
+MP, DENS, 1, DENSITY
+
+ET, 1, PLANE183
+KEYOPT,1,3,0
+
+
+LESIZE, ALL, S_GEOM / 2
+AMESH, ALL
+
+/SOL
+
+LSEL, S, LOC, X, 0
+LSEL, R, LOC, Y, 0, H_GEOM
+DL, ALL, , ALL, 0
+ALLSEL, ALL
+
+LSEL, S, LOC, Y, H_GEOM
+LSEL, R, LOC, X, 0, H_GEOM
+
+SFL, ALL, PRES, PRESSURE_VAL 
+ALLSEL, ALL                  
+
+! APLOT
+
+SOLVE
+
+/POST1
+SET, LAST
+RSYS, 1
+NSORT, s, EQV
+*GET,SMAX,SORT,0,MAX
+
+*cfopen,results.txt
+*cfwrite,'Smax = ',smax
+*cfclose

@@ -7,21 +7,21 @@
     {
       "identifier": "x",
       "name": "x",
-      "defaultValue": 24,
+      "defaultValue": 10,
       "lowerBound": 0,
       "upperBound": 42
     },
     {
       "identifier": "y",
       "name": "y",
-      "defaultValue": 12,
+      "defaultValue": 10,
       "lowerBound": 0,
       "upperBound": 42
     },
     {
       "identifier": "z",
       "name": "z",
-      "defaultValue": 12,
+      "defaultValue": 10,
       "lowerBound": 0,
       "upperBound": 42
     }

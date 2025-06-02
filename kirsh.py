@@ -41,8 +41,8 @@ def stress_parser(filename):
 
 task = OptimizationTask(
     variables=[
-        DesignVariable(name="a", value=0.1, lower=0.1, upper=5.0),
-        DesignVariable(name="b", value=0.1, lower=0.1, upper=10.0)
+        DesignVariable(name="a", value=0.1, lower=0.01, upper=1.0),
+        DesignVariable(name="b", value=0.1, lower=0.01, upper=1.0)
     ],
     target=AnsysMacroTargetFunction(
         macro_template_path="kirsh.txt",

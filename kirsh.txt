@@ -39,7 +39,7 @@ solve
 /post1
 set,last
 rsys,1
-nsort,s,y
+nsort,s,EQV
 *get,smax,sort,0,max
 
 *cfopen,results.txt
