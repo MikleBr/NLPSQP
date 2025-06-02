@@ -6,6 +6,3 @@ class DesignVariable:
         self.value = value
         self.lower = lower
         self.upper = upper
-
-    def clip(self):
-        self.value = max(min(self.value, self.upper), self.lower)

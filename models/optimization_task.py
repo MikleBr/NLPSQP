@@ -30,4 +30,3 @@ class OptimizationTask:
     def set_variable_values(self, values: np.ndarray):
         for v, val in zip(self.variables, values):
             v.value = val
-            v.clip()

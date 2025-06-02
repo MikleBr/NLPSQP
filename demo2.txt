@@ -56,7 +56,7 @@ ET, 1, PLANE183
 KEYOPT,1,3,0
 
 
-LESIZE, ALL, S_GEOM / 2
+LESIZE, ALL, S_GEOM / 10
 AMESH, ALL
 
 /SOL
@@ -79,9 +79,12 @@ SOLVE
 /POST1
 SET, LAST
 RSYS, 1
-NSORT, s, EQV
-*GET,SMAX,SORT,0,MAX
+
+! ksel,,kp,,3
+
+NSORT, U, SUM
+*GET,UMAX,SORT,0,MAX
 
 *cfopen,results.txt
-*cfwrite,'Smax = ',smax
+*cfwrite,'Umax = ',UMAX
 *cfclose

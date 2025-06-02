@@ -15,8 +15,6 @@ class Optimizer:
         self._last_grad_norm = np.inf
         self._last_step_size = 0.0
         self._prev_alpha = 1.0
-        # Нужно для увеличения штрафа при выходе за ограничения
-        self.penalty_coeff_gain = 1.0
 
         self._feasible_steps = 0
         self.iteration_history = []
@@ -119,25 +117,18 @@ class Optimizer:
         return self.task.get_variable_dict()
 
     def _solve_qp_subproblem(self, Hessian, target_function_grad, A, b):
-        eigvals = np.linalg.eigvalsh(Hessian)
-        lam_min = eigvals.min()
-        print("λ_min =", lam_min)
-
-        # проверяем компоненту g в нулевом подпространстве, если нужно
-        # if lam_min < 1e-12:
-        #     # собственные векторы, соответствующие ~0
-        #     null_space = eigvecs[:, eigvals < 1e-12]
-        #     proj = null_space.T @ g
-        #     print("‖проекция g на ядро(H)‖ =", np.linalg.norm(proj))
-
         n = Hessian.shape[0]
         x = Variable(n)
 
+        print("Hessian", Hessian)
+        print("A", A)
+        print("b", b)
+
         objective = Minimize(0.5 * quad_form(x, Hessian) + target_function_grad.T @ x)
-        constraints = [A[i, :] @ x <= b[i] for i in range(A.shape[0])] if A.shape[0] > 0 else []
+        constraints = [A @ x <= b] if A.shape[0] > 0 else []
 
         prob = Problem(objective, constraints)
-        prob.solve( solver="OSQP", verbose=True)
+        prob.solve(verbose=True)
 
         print("Status:", prob.status)
         print("Primal objective:", prob.value)
@@ -165,15 +156,28 @@ class Optimizer:
         return H_reg, delta
 
     def _compute_gradient(self, func, x: np.ndarray) -> np.ndarray:
+        """
+        Вычисляет градиент функции func в точке x, используя центральные конечные разности.
+        """
         eps = self.task.config.grad_eps
-        x = x.astype(float)
+        x = x.astype(float)  # Убедимся, что x - это float для арифметики
         grad = np.zeros_like(x)
-        f0 = func.evaluate(dict(zip(self.task.get_variable_names(), x)))
+        variable_names = self.task.get_variable_names()
+
         for i in range(len(x)):
-            x_eps = x.copy()
-            x_eps[i] += eps
-            f_eps = func.evaluate(dict(zip(self.task.get_variable_names(), x_eps)))
-            grad[i] = (f_eps - f0) / eps
+            x_plus_eps = x.copy()
+            x_plus_eps[i] += eps
+
+            x_minus_eps = x.copy()
+            x_minus_eps[i] -= eps
+
+            # Передаем копии словарей, чтобы избежать модификации оригинального x
+            # или случайного влияния между вызовами evaluate
+            f_plus = func.evaluate(dict(zip(variable_names, x_plus_eps)))
+            f_minus = func.evaluate(dict(zip(variable_names, x_minus_eps)))
+
+            grad[i] = (f_plus - f_minus) / (2 * eps)
+        
         return grad
 
     def _update_hessian_bfgs(self, B: np.ndarray, s: np.ndarray, y: np.ndarray, curvature_threshold: float = 1e-8) -> np.ndarray: 
@@ -242,18 +246,20 @@ class Optimizer:
         return (np.array(A), np.array(b)) if A else (np.zeros((0, len(x))), np.zeros(0))
 
     def _evaluate_merit(self, x: np.ndarray) -> float:
-        penalty_coeff = self.task.config.penalty_coeff * self.penalty_coeff_gain
+        penalty_coeff = self.task.config.penalty_coeff
         var_dict = dict(zip(self.task.get_variable_names(), x))
         f_val = self.task.target.evaluate(var_dict)
         constraint_penalty = 0.0
         for constraint in self.task.constraints:
             val = constraint.evaluate(var_dict)
+            constraint_penalty_gain = constraint.penalty_gain
+            
             if constraint.type == ConstraintType.INEQ:
                 # Для неравенств: max(0, g(x))^2
-                constraint_penalty += max(0, val)**2
+                constraint_penalty += (max(0, val)**2) * constraint_penalty_gain
             elif constraint.type == ConstraintType.EQ:
                 # Для равенств: h(x)^2
-                constraint_penalty += val**2
+                constraint_penalty += val**2 * constraint_penalty_gain
 
         # Добавляем ограничения по переменным
         for variable in self.task.variables:
@@ -270,7 +276,8 @@ class Optimizer:
         return merit
 
     def _line_search(self, x, p):
-        alpha = self._prev_alpha
+        # alpha = self._prev_alpha
+        alpha = 1.0
         c1 = 1e-4
         beta = 0.5
         max_trials = 20
