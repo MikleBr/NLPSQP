@@ -4,8 +4,20 @@
     "expression": "(1 - x)**2 + 100 * (y - x**2)**2"
   },
   "variables": [
-    { "identifier": "x", "name": "x", "defaultValue": 1.2 },
-    { "identifier": "y", "name": "y", "defaultValue": 1.2 }
+    {
+      "identifier": "x",
+      "name": "x",
+      "defaultValue": 5,
+      "lower": -5,
+      "upper": 5
+    },
+    {
+      "identifier": "y",
+      "name": "y",
+      "defaultValue": 5,
+      "lower": -5,
+      "upper": 5
+    }
   ],
   "constraints": []
 }

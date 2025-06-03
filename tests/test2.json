@@ -7,8 +7,8 @@
     {
       "identifier": "x",
       "name": "x",
-      "defaultValue": -5,
-      "lowerBound": -5,
+      "defaultValue": 10,
+      "lowerBound": 4,
       "upperBound": 10
     },
     {

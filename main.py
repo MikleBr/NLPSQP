@@ -11,35 +11,8 @@ from managers.optimizer import Optimizer
 # OptimizationComparisonTest().test_sqp_vs_scipy()
 from models.optimization_task import OptimizationTask
 from models.design_variable import DesignVariable
-from models.constraint import Constraint, ConstraintType
 from models.optimization_config import OptimizationConfig
 from models.ansys_target_function import AnsysMacroTargetFunction
-
-def stress_parser(filename):
-    with open(filename, 'r') as f:
-        for line in f:
-            print(line)
-            if "Smax," in line:
-                parts = line.strip().split("Smax,")
-                if len(parts) > 1:
-                    try:
-                        return float(parts[1])
-                    except ValueError:
-                        raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
-    raise RuntimeError("Не удалось извлечь значение напряжения")
-
-def mass_parser(filename):
-    with open(filename, 'r') as f:
-        for line in f:
-            print(line)
-            if "Mass," in line:
-                parts = line.strip().split("Mass,")
-                if len(parts) > 1:
-                    try:
-                        return float(parts[1])
-                    except ValueError:
-                        raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
-    raise RuntimeError("Не удалось извлечь значение напряжения")
 
 def umax_parser(filename):
     with open(filename, 'r') as f:
@@ -51,53 +24,32 @@ def umax_parser(filename):
                     try:
                         return float(parts[1])
                     except ValueError:
-                        raise RuntimeError(f"Не удалось преобразовать значение '{parts[1]}' в число")
-    raise RuntimeError("Не удалось извлечь значение напряжения")
-
+                        raise RuntimeError(f"Не удалось преобразовать значение напряжений '{parts[1]}' в число")
+    raise RuntimeError("Не удалось извлечь значение перемещений")
 
 target = AnsysMacroTargetFunction(
-        macro_template_path="beam.txt",
+        macro_template_path="demo2.txt",
         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
         workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
         output_filename="results.txt",
-        result_parser=mass_parser
+        result_parser=umax_parser
 )
 
 # res = target.evaluate({
-#     "r1": 0.031918,
-#     "r2": 0.02726
+#     "DIAG_BEAM_POSITION": 12,
+#     # "r2": 0.02726
 # })
 
 # print(res)
 
-# deformationAnsysFunction = AnsysMacroTargetFunction(
-#         macro_template_path="beam.txt",
-#         ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
-#         workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
-#         output_filename="results.txt",
-#         result_parser=umax_parser
-# )
-
-stressAnsysFunction = AnsysMacroTargetFunction(
-        macro_template_path="beam.txt",
-        ansys_path="C:/Program Files/ANSYS Inc/ANSYS Student/v251/ansys/bin/winx64/ANSYS251.exe",
-        workdir="C:/Users/Mikhail/Desktop/NLPSQP/ansys_tmp",
-        output_filename="results.txt",
-        result_parser=stress_parser
-)
-
-# deformationConstraint = Constraint(func=lambda params: deformationAnsysFunction.evaluate(params) - 0.002, type=ConstraintType.INEQ, name="Deformation < 0.002m", penalty_gain = 1000000)
-stressConstraint = Constraint(func=lambda params: stressAnsysFunction.evaluate(params) - 5000000, type=ConstraintType.INEQ, name="Stress < 5MPa")
-
 
 task = OptimizationTask(
     variables=[
-        DesignVariable(name="r1", value=0.4, lower=0.001),
-        DesignVariable(name="r2", value=0.2, lower=0.001)
+        DesignVariable(name="DIAG_BEAM_POSITION", value=10, lower=5, upper=30),
     ],
     target=target,
-    constraints=[stressConstraint],
-    config=OptimizationConfig(max_iter=50)
+    constraints=[],
+    config=OptimizationConfig(max_iter=75, tol = 1e-6, grad_eps=1e-3)
 )
 
 optimizer = Optimizer(task)
