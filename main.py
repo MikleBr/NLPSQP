@@ -35,22 +35,22 @@ target = AnsysMacroTargetFunction(
         result_parser=umax_parser
 )
 
-# res = target.evaluate({
-#     "DIAG_BEAM_POSITION": 12,
-#     # "r2": 0.02726
-# })
+res = target.evaluate({
+    "DIAG_BEAM_POSITION": 11.354,
+    # "r2": 0.02726
+})
 
-# print(res)
+print(res)
 
 
-task = OptimizationTask(
-    variables=[
-        DesignVariable(name="DIAG_BEAM_POSITION", value=10, lower=5, upper=30),
-    ],
-    target=target,
-    constraints=[],
-    config=OptimizationConfig(max_iter=75, tol = 1e-6, grad_eps=1e-3)
-)
+# task = OptimizationTask(
+#     variables=[
+#         DesignVariable(name="DIAG_BEAM_POSITION", value=10, lower=5, upper=30),
+#     ],
+#     target=target,
+#     constraints=[],
+#     config=OptimizationConfig(max_iter=75, tol = 1e-6, grad_eps=1e-3, tau=0.1)
+# )
 
-optimizer = Optimizer(task)
-optimizer.optimize()
+# optimizer = Optimizer(task)
+# optimizer.optimize()

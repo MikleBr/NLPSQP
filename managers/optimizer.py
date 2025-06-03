@@ -32,8 +32,9 @@ class Optimizer:
         #     # Выбрасываем исключение, чтобы остановить выполнение программы
         #     raise ValueError("Начальные условия не удовлетворяют ограничениям.")
         
-        x = self.task.get_variable_values() 
-        hess = np.eye(len(x)) # Начальное приближение Гессиана
+        x = self.task.get_variable_values()
+        
+        hess = self.task.config.tau * np.eye(len(x)) # Начальное приближение Гессиана
         s_prev, y_prev = None, None
 
         for iteration in range(self.task.config.max_iter):
